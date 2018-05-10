@@ -2,11 +2,15 @@ package org.javers.repository.mongo;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+
+import java.util.List;
 import java.util.Optional;
 import org.javers.core.metamodel.object.CdoSnapshot;
 import org.javers.core.metamodel.object.GlobalId;
 
+import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * @author bartosz.walacik
@@ -14,14 +18,16 @@ import java.util.function.Function;
 class LatestSnapshotCache {
     private final Cache<GlobalId, Optional<CdoSnapshot>> cache;
     private final Function<GlobalId, Optional<CdoSnapshot>> source;
+    private final Function<Set<GlobalId>, List<CdoSnapshot>> listSource;
     private final boolean disabled;
 
-    LatestSnapshotCache(int size, Function<GlobalId, Optional<CdoSnapshot>> source) {
+    LatestSnapshotCache(int size, Function<GlobalId, Optional<CdoSnapshot>> source, Function<Set<GlobalId>, List<CdoSnapshot>> listSource) {
         cache = CacheBuilder.newBuilder()
                 .maximumSize(size)
                 .build();
 
         this.source = source;
+        this.listSource = listSource;
         this.disabled = size == 0;
     }
 
@@ -38,6 +44,26 @@ class LatestSnapshotCache {
 
         Optional<CdoSnapshot> fromDb = source.apply(globalId);
         cache.put(globalId, fromDb);
+        return fromDb;
+    }
+
+    List<CdoSnapshot> getLatest(Set<GlobalId> globalIds) {
+        if (disabled) {
+            return listSource.apply(globalIds);
+        }
+
+        List<CdoSnapshot> fromCache = globalIds.stream()
+            .map(cache::getIfPresent)
+            .filter(Optional::isPresent)
+            .map(Optional::get)
+            .collect(Collectors.toList());
+
+        if (fromCache != null) {
+            return fromCache;
+        }
+
+        List<CdoSnapshot> fromDb = listSource.apply(globalIds);
+        fromDb.forEach(cdoSnapshot -> put(cdoSnapshot));
         return fromDb;
     }
 

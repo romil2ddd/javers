@@ -53,6 +53,11 @@ public class JaversSqlRepository implements JaversRepository {
     }
 
     @Override
+    public List<CdoSnapshot> getLatest(Set<GlobalId> globalIds) {
+        return finder.getLatest(globalIds);
+    }
+
+    @Override
     public List<CdoSnapshot> getSnapshots(QueryParams queryParams) {
         return finder.getSnapshots(queryParams);
     }

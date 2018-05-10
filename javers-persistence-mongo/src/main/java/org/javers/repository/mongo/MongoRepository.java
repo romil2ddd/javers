@@ -62,7 +62,8 @@ public class MongoRepository implements JaversRepository {
     MongoRepository(MongoDatabase mongo, JsonConverter jsonConverter, int cacheSize) {
         this.jsonConverter = jsonConverter;
         this.mongoSchemaManager = new MongoSchemaManager(mongo);
-        cache = new LatestSnapshotCache(cacheSize, input -> getLatest(createIdQuery(input)));
+        cache = new LatestSnapshotCache(cacheSize, input -> getLatest(createIdQuery(input)),
+            input -> getLatestSnapshots(createBulkIdQuery(input)));
     }
 
     @Override
@@ -90,6 +91,11 @@ public class MongoRepository implements JaversRepository {
     @Override
     public Optional<CdoSnapshot> getLatest(GlobalId globalId) {
         return cache.getLatest(globalId);
+    }
+
+    @Override
+    public List<CdoSnapshot> getLatest(Set<GlobalId> globalIds) {
+        return cache.getLatest(globalIds);
     }
 
     @Override
@@ -140,6 +146,12 @@ public class MongoRepository implements JaversRepository {
 
     private Bson createIdQuery(GlobalId id) {
         return new BasicDBObject(GLOBAL_ID_KEY, id.value());
+    }
+
+    private Bson createBulkIdQuery(Set<GlobalId> ids) {
+        return Filters.in(GLOBAL_ID_KEY, ids.stream()
+            .map(GlobalId::value)
+            .collect(Collectors.toSet()));
     }
 
     private Bson createIdQueryWithAggregate(GlobalId id) {
@@ -297,6 +309,15 @@ public class MongoRepository implements JaversRepository {
         MongoCursor<Document> mongoLatest = getMongoSnapshotsCursor(idQuery, Optional.of(queryParams));
 
         return getOne(mongoLatest).map(d -> readFromDBObject(d));
+    }
+
+    private List<CdoSnapshot> getLatestSnapshots(Bson idQuery) {
+        MongoCursor<Document> mongoLatest = getMongoSnapshotsCursor(idQuery, Optional.empty());
+        List<CdoSnapshot> cdoSnapshots = new ArrayList<>();
+        while (mongoLatest.hasNext()) {
+            cdoSnapshots.add(readFromDBObject(mongoLatest.next()));
+        }
+        return cdoSnapshots;
     }
 
     private List<CdoSnapshot> queryForSnapshots(Bson query, Optional<QueryParams> queryParams) {

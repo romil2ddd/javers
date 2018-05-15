@@ -21,6 +21,8 @@ import org.polyjdbc.core.query.Order;
 import org.polyjdbc.core.query.SelectQuery;
 
 import java.util.*;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
 
 import static org.javers.repository.sql.PolyUtil.queryForOptionalLong;
 import static org.javers.repository.sql.schema.FixedSchemaFactory.*;
@@ -53,6 +55,14 @@ public class CdoSnapshotFinder {
             QueryParams oneItemLimit = QueryParamsBuilder.withLimit(1).build();
             return fetchCdoSnapshots(new SnapshotIdFilter(tableNameProvider, maxSnapshot), Optional.of(oneItemLimit)).get(0);
         });
+    }
+
+    public List<CdoSnapshot> getLatest(final Set<GlobalId> globalIds) {
+        return globalIds.stream()
+            .map(this::getLatest)
+            .filter(Optional::isPresent)
+            .map(Optional::get)
+            .collect(Collectors.toList());
     }
 
     public List<CdoSnapshot> getSnapshots(QueryParams queryParams) {

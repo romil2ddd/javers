@@ -21,6 +21,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 import static java.util.Collections.unmodifiableList;
 
@@ -183,6 +184,16 @@ public class InMemoryRepository implements JaversRepository {
         }
 
         return Optional.empty();
+    }
+
+    @Override
+    public List<CdoSnapshot> getLatest(final Set<GlobalId> globalIds) {
+        Validate.argumentsAreNotNull(globalIds);
+
+        return globalIds.stream()
+            .filter(snapshots::containsKey)
+            .map(globalId -> snapshots.get(globalId).peek())
+            .collect(Collectors.toList());
     }
 
     @Override

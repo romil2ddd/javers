@@ -193,20 +193,6 @@ public class InMemoryRepository implements JaversRepository {
     }
 
     @Override
-    public List<CdoSnapshot> getLatest(Set<GlobalId> globalIds) {
-        Validate.argumentsAreNotNull(globalIds);
-
-        final List<CdoSnapshot> cdoSnapshots = new ArrayList<>();
-        globalIds.forEach(globalId -> {
-            if (snapshots.containsKey(globalId)) {
-                LinkedList<CdoSnapshot> states = snapshots.get(globalId);
-                cdoSnapshots.add(states.peek());
-            }
-        });
-        return cdoSnapshots;
-    }
-
-    @Override
     public List<CdoSnapshot> getSnapshots(QueryParams queryParams) {
         Validate.argumentIsNotNull(queryParams);
 

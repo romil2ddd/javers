@@ -93,6 +93,4 @@ public interface JaversRepository {
      * good place to put database schema update
      */
     void ensureSchema();
-
-    List<CdoSnapshot> getLatest(Set<GlobalId> globalIds);
 }

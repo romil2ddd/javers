@@ -18,18 +18,18 @@ import java.util.stream.Collectors;
 class LatestSnapshotCache {
     private final Cache<GlobalId, Optional<CdoSnapshot>> cache;
     private final Function<GlobalId, Optional<CdoSnapshot>> source;
-    private final Function<Set<GlobalId>, List<CdoSnapshot>> listSource;
+    private final Function<Set<GlobalId>, List<CdoSnapshot>> fetchSnapshots;
     private final boolean disabled;
 
     LatestSnapshotCache(int size,
                         Function<GlobalId, Optional<CdoSnapshot>> source,
-                        Function<Set<GlobalId>, List<CdoSnapshot>> listSource) {
+                        Function<Set<GlobalId>, List<CdoSnapshot>> fetchSnapshots) {
         cache = CacheBuilder.newBuilder()
                 .maximumSize(size)
                 .build();
 
         this.source = source;
-        this.listSource = listSource;
+        this.fetchSnapshots = fetchSnapshots;
         this.disabled = size == 0;
     }
 
@@ -51,7 +51,7 @@ class LatestSnapshotCache {
 
     List<CdoSnapshot> getLatest(final Set<GlobalId> globalIds) {
         if (disabled) {
-            return listSource.apply(globalIds);
+            return fetchSnapshots.apply(globalIds);
         }
 
         final List<CdoSnapshot> fromCache = globalIds.stream()
@@ -64,7 +64,7 @@ class LatestSnapshotCache {
             return fromCache;
         }
 
-        final List<CdoSnapshot> fromDb = listSource.apply(globalIds);
+        final List<CdoSnapshot> fromDb = fetchSnapshots.apply(globalIds);
         fromCache.forEach(this::put);
         return fromDb;
     }

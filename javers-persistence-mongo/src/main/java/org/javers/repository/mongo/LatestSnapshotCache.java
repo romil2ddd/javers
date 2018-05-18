@@ -65,7 +65,7 @@ class LatestSnapshotCache {
         }
 
         final List<CdoSnapshot> fromDb = fetchSnapshots.apply(globalIds);
-        fromCache.forEach(this::put);
+        fromDb.forEach(this::put);
         return fromDb;
     }
 
